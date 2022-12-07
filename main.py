@@ -1,11 +1,8 @@
+import os
+import pyspark
+os.environ['SPARK_HOME'] = 'C:\spark\spark-3.0.1-bin-hadoop2.7'
+
 from pyspark.sql import SparkSession
-from datetime import datetime, date
-import pandas as pd
-from pyspark.sql import Row
 
-spark = SparkSession.builder.getOrCreate()
-
-#load dataframe from csv
-df = spark.read.csv('.csv', header=True, inferSchema=True)
-
-
+# Create a SparkSession object
+spark = SparkSession.builder.appName("MyApp").getOrCreate()
