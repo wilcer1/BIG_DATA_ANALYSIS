@@ -1,8 +1,12 @@
-import os
-import pyspark
-os.environ['SPARK_HOME'] = 'C:\spark\spark-3.0.1-bin-hadoop2.7'
-
+from pyspark.sql import SparkSession
+from datetime import datetime, date
+import pandas as pd
 from pyspark.sql import SparkSession
 
-# Create a SparkSession object
-spark = SparkSession.builder.appName("MyApp").getOrCreate()
+spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
+
+df = spark.read.format("csv").option("header", "true").load("hdfs://localhost:9870/sample/dataset/1987.csv")
+df.printSchema()
+df.show()
+
+
