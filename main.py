@@ -45,7 +45,7 @@ def na_to_nan():
         pandasDF[file].replace("NA", pd.np.nan, inplace=True)
     print("converted to nan")
 
-# function to check for NaN values in the dataset
+# function to check for NaN values in the dataset and plot them
 def check_nan():
     for name, file in pandasDF.items():
         file.isnull().sum().plot(kind='bar')
@@ -54,8 +54,18 @@ def check_nan():
         plt.ylabel("Number of NA values")
         plt.savefig(f"/img/NA_values_{name}.png")
 
-# convert_to_pandas()
-# na_to_nan()
+
+
+def main():
+    convert_to_pandas()
+    na_to_nan()
+
+
+if __name__ == "__main__":
+    main()
+
+
+
 # pandasDF.replace("NA", pd.np.nan, inplace=True)
 # pandasDF.isnull().sum().plot(kind='bar')
 # plt.title("NA values in the dataset")
