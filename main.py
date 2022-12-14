@@ -1,6 +1,5 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col,isnan,when,count, collect_list
-from datetime import datetime, date
 import pandas as pd
 from pyspark.sql import SparkSession
 import matplotlib.pyplot as plt
@@ -10,7 +9,6 @@ spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport()
 df = spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/1987.csv")
 
 
-# hi = df.select(collect_list("CRSElapsedTime")).first()[0]
 
 
 starting_point = 1987
@@ -21,17 +19,6 @@ pandasDF = {}
 for i in range(starting_point,ending_point):
     df[str(i)] = spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/"+str(i)+".csv")
     
-
-# function to check for NA values in the dataset
-def check_na(df):
-    with open("NA_values.txt", "w") as f:
-        for name, file in df.items():
-            f.writelines("Year: "+name+"\n")
-            for col in file.columns:
-                f.writelines("Total NA values: " + col + " " + str(file.filter(file[col] == "NA").count())+"\n")
-                f.writelines((" NA values / total file values" + " " + col + " " + str(file.filter(file[col]== "NA").count()/file.count()))+"\n")
-                
-
 
 # convert all pyspark dataframes to pandas dataframes
 def convert_to_pandas():
@@ -59,6 +46,7 @@ def check_nan():
 def main():
     convert_to_pandas()
     na_to_nan()
+   
 
 
 if __name__ == "__main__":
@@ -74,3 +62,17 @@ if __name__ == "__main__":
 
 # plt.savefig("NA_values.png")
 
+#  conf = spark.sparkContext.getConf().getAll()
+#     for i in conf:
+#         if i == "spark.driver.memory":
+#             print(i)
+
+
+# function to check for NA values in the dataset
+# def check_na(df):
+#     with open("NA_values.txt", "w") as f:
+#         for name, file in df.items():
+#             f.writelines("Year: "+name+"\n")
+#             for col in file.columns:
+#                 f.writelines("Total NA values: " + col + " " + str(file.filter(file[col] == "NA").count())+"\n")
+#                 f.writelines((" NA values / total file values" + " " + col + " " + str(file.filter(file[col]== "NA").count()/file.count()))+"\n")
