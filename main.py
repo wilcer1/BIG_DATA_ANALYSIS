@@ -1,9 +1,10 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col,isnan,when,count, collect_list
+
 import pandas as pd
 from pyspark.sql import SparkSession
 import matplotlib.pyplot as plt
 import numpy as np
+from pyspark.sql import functions as F
 
 spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
 
@@ -13,7 +14,7 @@ df = spark.read.format("csv").option("header", "true").load("hdfs://localhost:90
 
 
 starting_point = 1987
-ending_point = 2008
+ending_point = 2009
 df = {}
 pandasDF = {}
 
@@ -30,22 +31,65 @@ def convert_to_pandas():
 # convert all NA values to NaN
 def na_to_nan():
     for file in df:
-        pandasDF[file].replace("NA", np.nan, inplace=True)
+        df[file].replace("NA", np.nan)
     print("converted to nan")
+
+
+
+def replace_na(dataframe_dict):
+    for key, val in dataframe_dict.items():
+        val = val.replace("NA", str(np.nan))
+        dataframe_dict[key] = val
+    return dataframe_dict
 
 # function to check for NaN values in the dataset and plot them
 def check_nan():
-    for name, file in pandasDF.items():
-        file.isnull().sum().plot(kind='bar')
-        plt.title(f"NA values in {name} dataset")
+    for name, file in df.items():
+        for col in file.columns:
+            
+            plt.title(f"NA values in {name} dataset")
+            plt.xlabel("Columns")
+            plt.ylabel("Number of NA values")
+            plt.savefig(f"/img/NA_values_{name}.png")
+
+def plot_null_values():
+    for name, file in df.items():
+        null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
+        plt.figure(figsize=(10, 15))
+        plt.xticks(rotation=90)
+        plt.bar(null_counts.index, null_counts.values)
+        print("name: ", name)
         plt.xlabel("Columns")
-        plt.ylabel("Number of NA values")
-        plt.savefig(f"/img/NA_values_{name}.png")
+        plt.ylabel("Number of null values")
+        plt.title("Distribution of null values across columns")
+        
+        plt.savefig(f"img\\NA_values_{name}.png")
+        plt.clf()
+
+def plot_air_delay():
+    plt.figure(figsize=(10, 10))
+    max_delay = 0
+    for name, file in df.items():
+        
+        delays = file.select("ArrDelay").toPandas()["ArrDelay"].tolist()
+        max_delay = max(max_delay, max(delays))
+        plt.plot(delays, label=name)
+    
+    plt.xlabel("Time")
+    plt.ylabel("Air Delay (minutes)")
+    plt.title("Air Delay over Time")
+    plt.legend()
+    plt.yticks(range(0, max_delay+1, 10))
+    
+    
+    # Save the plot to a new file
+    plt.savefig(f"img\\delay\\air_delay_{i}.png")
+    plt.clf()
 
 
 
 def main():
-    na_to_nan()
+    plot_air_delay()
    
 
 
@@ -54,25 +98,3 @@ if __name__ == "__main__":
 
 
 
-# pandasDF.replace("NA", pd.np.nan, inplace=True)
-# pandasDF.isnull().sum().plot(kind='bar')
-# plt.title("NA values in the dataset")
-# plt.xlabel("Columns")
-# plt.ylabel("Number of NA values")
-
-# plt.savefig("NA_values.png")
-
-#  conf = spark.sparkContext.getConf().getAll()
-#     for i in conf:
-#         if i == "spark.driver.memory":
-#             print(i)
-
-
-# function to check for NA values in the dataset
-# def check_na(df):
-#     with open("NA_values.txt", "w") as f:
-#         for name, file in df.items():
-#             f.writelines("Year: "+name+"\n")
-#             for col in file.columns:
-#                 f.writelines("Total NA values: " + col + " " + str(file.filter(file[col] == "NA").count())+"\n")
-#                 f.writelines((" NA values / total file values" + " " + col + " " + str(file.filter(file[col]== "NA").count()/file.count()))+"\n")
