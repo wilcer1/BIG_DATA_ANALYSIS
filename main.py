@@ -1,10 +1,12 @@
-from pyspark.sql import SparkSession
 
 import pandas as pd
 from pyspark.sql import SparkSession
 import matplotlib.pyplot as plt
 import numpy as np
 from pyspark.sql import functions as F
+from pyspark.sql.types import StringType
+
+import matplotlib.ticker as ticker
 
 spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
 
@@ -28,11 +30,8 @@ def convert_to_pandas():
         pandasDF[name] = file.toPandas()
     print("converted to pandas")
 
-# convert all NA values to NaN
-def na_to_nan():
-    for file in df:
-        df[file].replace("NA", np.nan)
-    print("converted to nan")
+
+
 
 
 
@@ -66,30 +65,58 @@ def plot_null_values():
         plt.savefig(f"img\\NA_values_{name}.png")
         plt.clf()
 
+def plot_null_value_of_file(file, name):
+    null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
+    plt.figure(figsize=(10, 15))
+    plt.xticks(rotation=90)
+    plt.bar(null_counts.index, null_counts.values)
+    for col, count in null_counts.items():
+        print(f"Column '{col}' has {count} null values")
+    print("name: ", name)
+    plt.xlabel("Columns")
+    plt.ylabel("Number of null values")
+    plt.title("Distribution of null values across columns")
+        
+    plt.savefig(f"img\\NA_values_{name}.png")
+    plt.clf()
+
 def plot_air_delay():
     plt.figure(figsize=(10, 10))
     max_delay = 0
+    file_names = []
     for name, file in df.items():
         
+        # get the list of delays
         delays = file.select("ArrDelay").toPandas()["ArrDelay"].tolist()
-        max_delay = max(max_delay, max(delays))
+        # filter out the NA values
+        delays_filtered = [d for d in delays if d != 'NA']
+        # convert the list of strings to integers and find max delay
+        max_delay = max(max_delay, max(map(int, delays_filtered)))
         plt.plot(delays, label=name)
+        
+        file_names.append(name)
     
-    plt.xlabel("Time")
+    plt.xlabel("Year")
     plt.ylabel("Air Delay (minutes)")
     plt.title("Air Delay over Time")
     plt.legend()
-    plt.yticks(range(0, max_delay+1, 10))
+    # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
+    plt.yticks(range(0, max_delay+1, 60))
+
+    # Set the tick labels to the file names using a FixedFormatter
+    formatter = ticker.FixedFormatter(file_names)
+    plt.gca().xaxis.set_major_formatter(formatter)
     
     
     # Save the plot to a new file
-    plt.savefig(f"img\\delay\\air_delay_{i}.png")
+    plt.savefig(f"img\\delay\\air_delay_comparison.png")
     plt.clf()
 
 
 
 def main():
     plot_air_delay()
+    
    
 
 
