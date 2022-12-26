@@ -3,6 +3,7 @@ from pyspark.sql.functions import col,isnan,when,count, collect_list
 import pandas as pd
 from pyspark.sql import SparkSession
 import matplotlib.pyplot as plt
+import numpy as np
 
 spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
 
@@ -28,8 +29,8 @@ def convert_to_pandas():
 
 # convert all NA values to NaN
 def na_to_nan():
-    for file in pandasDF:
-        pandasDF[file].replace("NA", pd.np.nan, inplace=True)
+    for file in df:
+        pandasDF[file].replace("NA", np.nan, inplace=True)
     print("converted to nan")
 
 # function to check for NaN values in the dataset and plot them
@@ -44,7 +45,6 @@ def check_nan():
 
 
 def main():
-    convert_to_pandas()
     na_to_nan()
    
 
