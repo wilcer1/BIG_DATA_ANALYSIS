@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType
+from graphframes import GraphFrame
 
 import matplotlib.ticker as ticker
 
@@ -95,51 +96,47 @@ def plot_ArrDelay_values():
 
 
 
-def plot_arr_delay():
-    plt.figure(figsize=(15, 10))
-    max_delay = 0
-    file_names = []
-    for i, (name, file) in enumerate(df.items()):
-        print(f"Plotting {name} dataset, {i+1}/{len(df)}")
-        # get the list of delays
-        delays = file.select("ArrDelay").toPandas()["ArrDelay"].tolist()
-        
-        # filter out the NA values
-        delays_filtered = [d for d in delays if d != 'NA' and int(d) > 0]
-        # convert the list of strings to integers and find max delay
-        # max_delay = max(max_delay, max(map(int, delays_filtered)))
-        delays_filtered.sort()
-        plt.plot(delays_filtered, label=name)
-        
-        file_names.append(name)
-    
-    plt.xlabel("Year")
-    plt.ylabel("Air Delay (minutes)")
-    plt.title("Air Delay over Time")
-    plt.legend()
-    # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
-    plt.yticks(ticks = range(0, max_delay+1, 60))
+def plot_arr_delay(df_dict):
+  
+  vertices = []
+  edges = []
 
-    plt.ylim(delays_filtered[0], delays_filtered[-1])
-    
-    plt.xticks(ticks = range(0, len(file_names), 1), labels=file_names)
-    
-    
+  # Loop through the DataFrames in the dictionary
+  for i, (filename, df) in enumerate(df_dict.items()):
+    # Filter out "NA" values and negative values from the ArrDelay column
+    df = df.dropna(subset=['ArrDelay'])
+    df = df.where(df['ArrDelay'] > 0)
 
+    # Add a vertex for the current DataFrame
+    vertices.append((i, filename))
 
-    # Set the tick labels to the file names using a FixedFormatter
-    formatter = ticker.FixedFormatter(file_names)
-    plt.gca().xaxis.set_major_formatter(formatter)
-    
-    
-    # Save the plot to a new file
-    plt.savefig(f"img\\delay\\air_delay_comparison.png")
-    plt.clf()
+    # Add an edge for each value in the ArrDelay column
+    for row in df.select('ArrDelay').collect():
+      edges.append((i, row[0]))
 
+  # Create a GraphFrame from the vertices and edges
+  g = GraphFrame(spark.createDataFrame(vertices, ["id", "filename"]),
+                 spark.createDataFrame(edges, ["src", "dst"]))
+
+   # Convert the GraphFrame to a Pandas DataFrame
+  g_pandas = g.toPandas()
+
+  # Plot the graph using Matplotlib
+  ax = g_pandas.plot()
+
+  # Set the x-axis label
+  ax.set_xlabel('Filename')
+
+  # Set the y-axis label
+  ax.set_ylabel('Arrival Delay (minutes)')
+
+  # Save the plot to a file
+  plt.savefig("img\\delay\\air_delay_comparison.png")
+ 
 
 
 def main():
-    plot_arr_delay()
+    plot_arr_delay(df)
     
    
 
