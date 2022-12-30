@@ -80,19 +80,36 @@ def plot_null_value_of_file(file, name):
     plt.savefig(f"img\\NA_values_{name}.png")
     plt.clf()
 
-def plot_air_delay():
-    plt.figure(figsize=(10, 10))
-    max_delay = 0
-    file_names = []
+def plot_ArrDelay_values():
+    neg_nums = 0
+    total_nums = 0
     for name, file in df.items():
-        
+        print()
         # get the list of delays
         delays = file.select("ArrDelay").toPandas()["ArrDelay"].tolist()
+        for i in delays:
+            total_nums += 1
+            if i != "NA" and int(i) < 0 :
+                neg_nums += 1
+        print(f"Number of negative values in {name} dataset: {neg_nums}/{total_nums}")
+
+
+
+def plot_arr_delay():
+    plt.figure(figsize=(15, 10))
+    max_delay = 0
+    file_names = []
+    for i, (name, file) in enumerate(df.items()):
+        print(f"Plotting {name} dataset, {i+1}/{len(df)}")
+        # get the list of delays
+        delays = file.select("ArrDelay").toPandas()["ArrDelay"].tolist()
+        
         # filter out the NA values
-        delays_filtered = [d for d in delays if d != 'NA']
+        delays_filtered = [d for d in delays if d != 'NA' and int(d) > 0]
         # convert the list of strings to integers and find max delay
-        max_delay = max(max_delay, max(map(int, delays_filtered)))
-        plt.plot(delays, label=name)
+        # max_delay = max(max_delay, max(map(int, delays_filtered)))
+        delays_filtered.sort()
+        plt.plot(delays_filtered, label=name)
         
         file_names.append(name)
     
@@ -101,7 +118,14 @@ def plot_air_delay():
     plt.title("Air Delay over Time")
     plt.legend()
     # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
-    plt.yticks(range(0, max_delay+1, 60))
+    plt.yticks(ticks = range(0, max_delay+1, 60))
+
+    plt.ylim(delays_filtered[0], delays_filtered[-1])
+    
+    plt.xticks(ticks = range(0, len(file_names), 1), labels=file_names)
+    
+    
+
 
     # Set the tick labels to the file names using a FixedFormatter
     formatter = ticker.FixedFormatter(file_names)
@@ -115,7 +139,7 @@ def plot_air_delay():
 
 
 def main():
-    plot_air_delay()
+    plot_arr_delay()
     
    
 
