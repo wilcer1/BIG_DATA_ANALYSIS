@@ -156,7 +156,7 @@ def plot_cancelled():
     plt.ylim(0, round(max(cancelled.values()))+1)
 
     # Set the y-axis ticks
-    plt.yticks(range(0, round(max(cancelled.values()))+1))
+    plt.yticks(range(0, round(max(cancelled.values()))+1, 5000))
     print(round(max_cancelled))
     plt.xticks(range(0, len(file_names), 1))
 
