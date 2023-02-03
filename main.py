@@ -126,11 +126,53 @@ def plot_air_delay():
     plt.savefig(f"img\\delay\\air_delay_comparison.png")
     plt.clf()
 
+# function to plot column "Cancelled" for each file
+def plot_cancelled():
+    plt.figure(figsize=(20, 20))
+    cancelled = {}
+    file_names = []
+    max_cancelled = 0
+    i = 0
+    for name, file in df.items():
+        print("name: ", name, f"{i}/{len(df)}")
+        i+=1
+        
+        # get the list of delays
+        cancelled_flights = file.select("Cancelled")
+        # filter out the NA values
+        cancelled_flights = cancelled_flights.agg(F.sum("Cancelled"))
+        # get the average delay of the file
+        cancelled_flights = cancelled_flights.first()[0]
+        max_cancelled = max(max_cancelled, cancelled_flights)
+        cancelled[name] = cancelled_flights
+        file_names.append(name)
+    
+    plt.plot(file_names, cancelled.values())
+    plt.xlabel("Year")
+    plt.ylabel("Cancelled Flights")
+    plt.title("Cancelled Flights over Time")
+    # plt.legend()
+    # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
+    plt.ylim(0, round(max(cancelled.values()))+1)
+
+    # Set the y-axis ticks
+    plt.yticks(range(0, round(max(cancelled.values()))+1))
+    print(round(max_cancelled))
+    plt.xticks(range(0, len(file_names), 1))
+
+    # Set the tick labels to the file names using a FixedFormatter
+    formatter = ticker.FixedFormatter(file_names)
+    plt.gca().xaxis.set_major_formatter(formatter)
+    
+    
+    # Save the plot to a new file
+    plt.savefig(f"img\\cancelled\\cancelled_comparison.png")
+    plt.clf()
 
 
 
 def main():
-    plot_air_delay()
+    plot_cancelled()
     
     
    
