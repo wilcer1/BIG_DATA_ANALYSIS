@@ -11,13 +11,13 @@ import matplotlib.ticker as ticker
 
 class Shell(cmd.Cmd):
 
-    def __init__(self):
-        cmd.Cmd.__init__(self)
+    def do_setup(self, line):
         self.spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
         self.starting_point = 1987
         self.ending_point = 2009
         self.df = {}
         load_files(self)
+        
 
     def load_files(self):
         for i in range(self.starting_point,self.ending_point):
