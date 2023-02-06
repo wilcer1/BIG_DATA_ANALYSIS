@@ -10,19 +10,21 @@ import matplotlib.ticker as ticker
 
 
 class Shell(cmd.Cmd):
+    def start_loop(self):
+        self.setup(self)
+        self.cmdloop()
 
-    def do_setup(self, line):
+    def setup(self):
         self.spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
         self.starting_point = 1987
         self.ending_point = 2009
         self.df = {}
-        load_files(self)
-        
-
-    def load_files(self):
         for i in range(self.starting_point,self.ending_point):
             self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/"+str(i)+".csv")
             print(i, " files loaded")
+        
+
+    
     
     
     def do_plot_null_values(self, line):
@@ -49,6 +51,4 @@ class Shell(cmd.Cmd):
         
 
 
-
-shell = Shell()
-shell.cmdloop()
+Shell().start_loop()
