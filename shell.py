@@ -22,6 +22,7 @@ class Shell(cmd.Cmd):
         for i in range(self.starting_point,self.ending_point):
             self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/"+str(i)+".csv")
             print(i, " file loaded")
+        print("All files loaded")
         
     
     
@@ -29,7 +30,7 @@ class Shell(cmd.Cmd):
     
     def do_plot_null_values(self, line):
         """Plot null values in the dataset and save them to img folder"""
-        for name, file in df.items():
+        for name, file in self.df.items():
             null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
             plt.figure(figsize=(10, 15))
             plt.xticks(rotation=90)
@@ -42,15 +43,15 @@ class Shell(cmd.Cmd):
             plt.savefig(f"img\\NA_values_{name}.png")
             plt.clf()
 
-    def plot_air_delay():
+    def do_plot_air_delay(self, line):
         """Plot the average air delay over time"""
         plt.figure(figsize=(15, 10))
         avg_delays = {}
         file_names = []
         max_avg = 0
         i = 0
-        for name, file in df.items():
-            print("name: ", name, f"{i}/{len(df)}")
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
             i+=1
             
             # get the list of delays
@@ -85,15 +86,15 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\delay\\air_delay_comparison.png")
         plt.clf()
     
-    def plot_cancelled():
+    def do_plot_cancelled(self, line):
         """Plot the average number of cancelled flights over time"""
         plt.figure(figsize=(20, 20))
         cancelled = {}
         file_names = []
         max_cancelled = 0
         i = 0
-        for name, file in df.items():
-            print("name: ", name, f"{i}/{len(df)}")
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
             i+=1
             
             # get the list of delays
@@ -127,6 +128,74 @@ class Shell(cmd.Cmd):
         # Save the plot to a new file
         plt.savefig(f"img\\cancelled\\cancelled_comparison.png")
         plt.clf()
+    
+    def do_plot_average_distance(self, line):
+        """Plot the average distance over time"""
+        plt.figure(figsize=(15, 10))
+        avg_distance_dict = {}
+        file_names = []
+        max_avg = 0
+        i = 0
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            # get the list of delays
+            distance = file.select("Distance")
+            # filter out the NA values
+            avg_distance = distance.agg(F.avg("Distance")) #DataFrame[avg(Distance): double]
+            
+            # get the average delay of the file
+            avg_distance = avg_distance.first()[0]
+            
+            max_avg = max(max_avg, avg_distance)
+            avg_distance_dict[name] = avg_distance
+            file_names.append(name)
+        
+        plt.plot(file_names, avg_distance_dict.values())
+        print(avg_distance_dict.values())
+        plt.xlabel("Year")
+        plt.ylabel("Distance (miles)")
+        plt.title("Distance over Time")
+        # plt.legend()
+        plt.ylim(round(min(avg_distance_dict.values())), round(max(avg_distance_dict.values()))+1, 10)
+        print(f"{range(round(min(avg_distance_dict.values())), round(max(avg_distance_dict.values()))+1), 10}")
+        # Set the y-axis ticks
+        plt.yticks(range(0, round(max(avg_distance_dict.values()))+1))
+        print(round(max_avg))
+        plt.xticks(range(0, len(file_names), 1))
+
+        # Set the tick labels to the file names using a FixedFormatter
+        formatter = ticker.FixedFormatter(file_names)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\distance\\distance_comparison.png")
+        plt.clf()
+
+
+    def do_replace_na(self, line):
+        """Replace NA values with np.nan"""
+        for key, val in self.df.items():
+            val = val.replace("NA", str(np.nan))
+            self.df[key] = val
+            print(f"Replaced NA values in {key}")
+        
+    def do_drop_null(self, line):
+        """Drop all rows with null values"""
+        for key, val in self.df.items():
+            val = val.dropna()
+            self.df[key] = val
+            print(f"Dropped null values in {key}")
+        
+    def do_print_column_head(self, line):
+        """Print the first 20 rows of a column"""
+        print(self.df["1987"].select(line).show(20))
+
+    def do_show_columns(self, line):
+        """Show the columns of the dataset"""
+        print(self.df["1987"].columns)
   
 
     def do_EOF(self, line):
