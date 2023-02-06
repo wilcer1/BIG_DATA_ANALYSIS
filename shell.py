@@ -140,12 +140,12 @@ class Shell(cmd.Cmd):
             print("name: ", name, f"{i}/{len(self.df)}")
             i+=1
             
-            # get the list of delays
+            # get the list of Distances
             distance = file.select("Distance")
-            # filter out the NA values
+            # get the average
             avg_distance = distance.agg(F.avg("Distance")) #DataFrame[avg(Distance): double]
             
-            # get the average delay of the file
+            
             avg_distance = avg_distance.first()[0]
             
             max_avg = max(max_avg, avg_distance)
@@ -153,15 +153,17 @@ class Shell(cmd.Cmd):
             file_names.append(name)
         
         plt.plot(file_names, avg_distance_dict.values())
-        print(avg_distance_dict.values())
+        for name, value in avg_distance_dict.items():
+            avg_distance_dict[name] = round(value)
+            
         plt.xlabel("Year")
-        plt.ylabel("Distance (miles)")
+        plt.ylabel("Distance (miles, rounded)")
         plt.title("Distance over Time")
         # plt.legend()
-        plt.ylim(round(min(avg_distance_dict.values())), round(max(avg_distance_dict.values()))+1, 10)
+        plt.ylim(round(min(avg_distance_dict.values())), round(max(avg_distance_dict.values()))+1)
         print(f"{range(round(min(avg_distance_dict.values())), round(max(avg_distance_dict.values()))+1), 10}")
         # Set the y-axis ticks
-        plt.yticks(range(0, round(max(avg_distance_dict.values()))+1))
+        plt.yticks(range(round(min(avg_distance_dict.values())), round(max(avg_distance_dict.values()))+1, 10))
         print(round(max_avg))
         plt.xticks(range(0, len(file_names), 1))
 
