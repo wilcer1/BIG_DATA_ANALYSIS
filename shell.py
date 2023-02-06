@@ -256,6 +256,48 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\num_flights\\num_flights_comparison.png")
         plt.clf()  
 
+    def do_plot_num_flights_divided_by_diverted(self, line):
+        """Plot number of flights divided by total diverted flights by year"""
+        plt.figure(figsize=(15, 10))
+        num_flights_diverted_divided = {}
+        file_names = []
+        i = 0
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            
+            year_col = file.select("Year")
+            
+            num_flights = year_col.count()
+            diverted_flights = file.select("Diverted")
+            diverted_num = diverted_flights.filter(diverted_flights["Diverted"] == 1).count()
+            num_flights_diverted_divided[name] = round(num_flights) / round(diverted_num)
+            
+            file_names.append(name)
+        plt.plot(file_names, num_flights_diverted_divided.values())
+        plt.xlabel("Year")
+        plt.ylabel("Number of Flights / Number of Diverted Flights")
+        plt.title("Number of Flights / Number of Diverted Flights over Time")
+        # plt.legend()
+        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
+        plt.ylim(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1)
+
+        # Set the y-axis ticks
+        plt.yticks(range(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1, round(max(num_flights_diverted_divided.values())/10)))
+        plt.xticks(range(0, len(file_names), 1))
+
+        # Set the tick labels to the file names using a FixedFormatter
+        formatter = ticker.FixedFormatter(file_names)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        print("max", max(num_flights_diverted_divided.values()))
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\diverted\\num_flights_dividedby_diverted.png")
+        plt.clf()  
+
+        
 
     def do_replace_na(self, line):
         """Replace NA values with np.nan"""
