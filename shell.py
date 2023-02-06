@@ -176,6 +176,86 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\distance\\distance_comparison.png")
         plt.clf()
 
+    def do_plot_diverted(self, line):
+        """Plot number of diverted flights each year"""
+        plt.figure(figsize=(15, 10))
+        diverted_dict = {}
+        file_names = []
+        
+        i = 0
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            
+            diverted_flights = file.select("Diverted")
+            diverted_dict[name] = diverted_flights.filter(diverted_flights["Diverted"] == 1).count()
+            file_names.append(name)
+            
+            
+            
+        
+        plt.plot(file_names, diverted_dict.values())
+        plt.xlabel("Year")
+        plt.ylabel("Total num of Diverted Flights")
+        plt.title("Diverted Flights over Time")
+        plt.ylim(0, round(max(diverted_dict.values()))+1)
+
+        # Set the y-axis ticks
+        plt.yticks(range(0, round(max(diverted_dict.values()))+1, round(max(diverted_dict.values())/10)))
+        plt.xticks(range(0, len(file_names), 1))
+
+        # Set the tick labels to the file names using a FixedFormatter
+        formatter = ticker.FixedFormatter(file_names)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\diverted\\diverted_comparison.png")
+        plt.clf()
+
+
+    def do_plot_num_flights(self, line):
+        """Plots the number of flights per year"""
+        plt.figure(figsize=(15, 10))
+        num_flights_dict = {}
+        file_names = []
+        i = 0
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            
+            year_col = file.select("Year")
+            
+            count = year_col.count()
+            
+            
+            num_flights_dict[name] = count
+            file_names.append(name)
+        
+        plt.plot(file_names, num_flights_dict.values())
+        plt.xlabel("Year")
+        plt.ylabel("Number of Flights")
+        plt.title("Number of Flights over Time")
+        # plt.legend()
+        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
+        plt.ylim(round(min(num_flights_dict.values())), round(max(num_flights_dict.values()))+1)
+
+        # Set the y-axis ticks
+        plt.yticks(range(round(min(num_flights_dict.values())), round(max(num_flights_dict.values()))+1, round(max(num_flights_dict.values())/10)))
+        plt.xticks(range(0, len(file_names), 1))
+
+        # Set the tick labels to the file names using a FixedFormatter
+        formatter = ticker.FixedFormatter(file_names)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        print("max", max(num_flights_dict.values()))
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\num_flights\\num_flights_comparison.png")
+        plt.clf()  
+
 
     def do_replace_na(self, line):
         """Replace NA values with np.nan"""
