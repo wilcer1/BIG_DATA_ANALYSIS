@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType
+import sys
 
 import matplotlib.ticker as ticker
 
@@ -19,9 +20,11 @@ class Shell(cmd.Cmd):
         self.starting_point = 1987
         self.ending_point = 2009
         self.df = {}
+        
         for i in range(self.starting_point,self.ending_point):
             self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/"+str(i)+".csv")
             print(i, " file loaded")
+        self.airportdf = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/airports.csv")
         print("All files loaded")
         
     
@@ -295,6 +298,128 @@ class Shell(cmd.Cmd):
         
         # Save the plot to a new file
         plt.savefig(f"img\\diverted\\num_flights_dividedby_diverted.png")
+        plt.clf()  
+    
+    def do_plot_total_dividedby_cancelled(self, line):
+        """Plot number of flights divided by total cancelled flights by year"""
+        plt.figure(figsize=(15, 10))
+        file_names = []
+        num_flights_cancelled_divided = {}
+        i = 0
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            
+            year_col = file.select("Year")
+            
+            num_flights = year_col.count()
+            cancelled_flights = file.select("Cancelled")
+            cancelled_num = cancelled_flights.filter(cancelled_flights["Cancelled"] == 1).count()
+            num_flights_cancelled_divided[name] = round(num_flights) / round(cancelled_num)
+            
+            file_names.append(name)
+        plt.plot(file_names, num_flights_cancelled_divided.values())
+        plt.xlabel("Year")
+        plt.ylabel("Number of Flights / Number of Cancelled Flights")
+        plt.title("Number of Flights / Number of Cancelled Flights over Time")
+        # plt.legend()
+        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
+        plt.ylim(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1)
+
+        # Set the y-axis ticks
+        plt.yticks(range(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1, round(max(num_flights_cancelled_divided.values())/10)))
+        plt.xticks(range(0, len(file_names), 1))
+
+        # Set the tick labels to the file names using a FixedFormatter
+        formatter = ticker.FixedFormatter(file_names)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\interactions\\num_flights_dividedby_cancelled.png")
+        plt.clf()  
+
+    def do_plot_origin(self, line):
+        """Plot most common origin airport total"""
+        plt.figure(figsize=(15, 10))
+        file_names = []
+        most_common_airports_dict = {}
+        i = 0
+        
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            
+            origin = file.select("Origin")
+            #select most common origin
+            grouped_data = origin.groupBy("Origin")
+            counts = grouped_data.agg(F.count("Origin").alias("count"))
+            # most_common = counts.sort(counts['count'].desc())
+            # most_common_value = most_common.first() # iata code
+            # most_common_count_value = most_common['count'] # count of said iata code
+            
+            airport_info = self.airportdf.select("iata", "state")
+            joined = counts.join(airport_info, counts["Origin"] == airport_info["iata"], "inner")
+            joined = joined.select("state", "count")
+            join_dict = joined.collect()
+            
+            for row in join_dict:
+                state = row["state"]
+                count = row["count"]
+                if state in most_common_airports_dict:
+                    most_common_airports_dict[state] += count
+                else:
+                    most_common_airports_dict[state] = count
+            
+
+
+            
+           
+
+            
+            # airport_info = self.airportdf.select("iata", "state")
+            # most_common_airport = airport_info.filter(airport_info["iata"] == most_common_value)
+            
+            
+            # state = most_common_airport.first()["state"]
+            # if state in most_common_airports_dict:
+            #     most_common_airports_dict[state] += most_common_count_value
+            # else:
+            #     most_common_airports_dict[state] = most_common_count_value
+
+            
+            
+            
+            
+            
+            
+            
+        
+        plt.bar(most_common_airports_dict.keys(), most_common_airports_dict.values())
+        # plt.gca.xaxis.labelpad = 20
+        
+        plt.xlabel("State")
+        plt.ylabel("Flights departed count")
+        plt.title("Most Common Origin States (Total)")
+
+        
+
+        # Set the y-axis ticks
+        plt.yticks(range(round(min(most_common_airports_dict.values())), round(max(most_common_airports_dict.values()))+1, round(max(most_common_airports_dict.values())/10)))
+        plt.xticks(range(0, len(most_common_airports_dict.keys()), 1), rotation=70)
+        
+        
+        # Set the tick labels to the file names using a FixedFormatter
+        # formatter = ticker.FixedFormatter(most_common_airports_dict.keys())
+        # plt.gca().xaxis.set_major_formatter(formatter)
+        
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\airports\\origin_state.png")
         plt.clf()  
 
         
