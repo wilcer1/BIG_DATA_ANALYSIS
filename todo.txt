@@ -1,4 +1,2 @@
-typ totala / cancelled
-o totala delat på distans
-o totala delat på air delay kanske
-security
+Total flights / cancelled flights per state
+arr delay per state

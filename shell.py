@@ -375,24 +375,6 @@ class Shell(cmd.Cmd):
                     most_common_airports_dict[state] = count
             
 
-
-            
-           
-
-            
-            # airport_info = self.airportdf.select("iata", "state")
-            # most_common_airport = airport_info.filter(airport_info["iata"] == most_common_value)
-            
-            
-            # state = most_common_airport.first()["state"]
-            # if state in most_common_airports_dict:
-            #     most_common_airports_dict[state] += most_common_count_value
-            # else:
-            #     most_common_airports_dict[state] = most_common_count_value
-
-            
-            
-            
             
             
             
@@ -412,17 +394,142 @@ class Shell(cmd.Cmd):
         plt.xticks(range(0, len(most_common_airports_dict.keys()), 1), rotation=70)
         
         
-        # Set the tick labels to the file names using a FixedFormatter
-        # formatter = ticker.FixedFormatter(most_common_airports_dict.keys())
-        # plt.gca().xaxis.set_major_formatter(formatter)
-        
+       
         
         
         # Save the plot to a new file
         plt.savefig(f"img\\airports\\origin_state.png")
         plt.clf()  
 
+
+    def do_plot_arr_delay_state(self, line):
+        """Plot the average arr delay per state"""
+        plt.figure(figsize=(15, 10))
+        total_delays = {}
+        most_common_airports_dict = {}
+        total_divided = {}
+        file_names = []
+        max_avg = 0
+        i = 0
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i += 1
+            
+            origin = file.select("Origin")
+            #select most common origin
+            grouped_data = origin.groupBy("Origin")
+            counts = grouped_data.agg(F.count("Origin").alias("count"))
+            
+            
+            airport_info = self.airportdf.select("iata", "state")
+            joined = counts.join(airport_info, counts["Origin"] == airport_info["iata"], "inner")
+            joined = joined.select("state", "count")
+            join_dict = joined.collect()
+            
+            for row in join_dict:
+                state = row["state"]
+                count = row["count"]
+                if state in most_common_airports_dict:
+                    most_common_airports_dict[state] += count
+                else:
+                    most_common_airports_dict[state] = count
+            # get the list of delays
+            delays = file.select("ArrDelay")
+            # filter out the NA values
+            total_delay = delays.agg(F.sum("ArrDelay"))
+            # get the average delay of the file
+            total_delay = total_delay.first()[0]
+            max_total = max(max_avg, total_delay)
+            total_delays[name] = total_delay
+
+            for k in most_common_airports_dict:
+                if k not in total_divided:
+                    total_divided[k] = most_common_airports_dict[k] / total_delays[name]
+                else:
+                    total_divided[k] += most_common_airports_dict[k] / total_delays[name]
+            file_names.append(name)
+        print(total_divided)
         
+        plt.bar(total_divided.keys(), total_divided.values())
+        plt.xlabel("State")
+        plt.ylabel("Flights Origin count / Arr Delay (minutes)")
+        plt.title("Flights Origin count / Arr Delay (minutes) per state")
+       
+        plt.ylim(0, round(max(total_divided.values()))+1)
+
+        # Set the y-axis ticks
+        plt.yticks(range(0, round(max(total_divided.values()))+1))
+        
+        plt.xticks(range(0, len(total_divided.keys()), 1), rotation=70)
+
+        # Set the tick labels to the file names using a FixedFormatter
+        # formatter = ticker.FixedFormatter(file_names)
+        # plt.gca().xaxis.set_major_formatter(formatter)
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\airports\\arr_delay_state_comparison.png")
+        plt.clf()
+        
+    def do_plot_dest(self, line):
+        """Plot most common origin airport total"""
+        plt.figure(figsize=(15, 10))
+        file_names = []
+        most_common_airports_dict = {}
+        i = 0
+        
+        for name, file in self.df.items():
+            print("name: ", name, f"{i}/{len(self.df)}")
+            i+=1
+            
+            
+            origin = file.select("Dest")
+            #select most common origin
+            grouped_data = origin.groupBy("Dest")
+            counts = grouped_data.agg(F.count("Dest").alias("count"))
+            # most_common = counts.sort(counts['count'].desc())
+            # most_common_value = most_common.first() # iata code
+            # most_common_count_value = most_common['count'] # count of said iata code
+            
+            airport_info = self.airportdf.select("iata", "state")
+            joined = counts.join(airport_info, counts["Dest"] == airport_info["iata"], "inner")
+            joined = joined.select("state", "count")
+            join_dict = joined.collect()
+            
+            for row in join_dict:
+                state = row["state"]
+                count = row["count"]
+                if state in most_common_airports_dict:
+                    most_common_airports_dict[state] += count
+                else:
+                    most_common_airports_dict[state] = count
+            
+
+            
+            
+            
+            
+        
+        plt.bar(most_common_airports_dict.keys(), most_common_airports_dict.values())
+        # plt.gca.xaxis.labelpad = 20
+        
+        plt.xlabel("State")
+        plt.ylabel("Flights departed count")
+        plt.title("Most Common Destination States (Total)")
+
+        
+
+        # Set the y-axis ticks
+        plt.yticks(range(round(min(most_common_airports_dict.values())), round(max(most_common_airports_dict.values()))+1, round(max(most_common_airports_dict.values())/10)))
+        plt.xticks(range(0, len(most_common_airports_dict.keys()), 1), rotation=70)
+        
+        
+       
+        
+        
+        # Save the plot to a new file
+        plt.savefig(f"img\\airports\\dest_state.png")
+        plt.clf()  
 
     def do_replace_na(self, line):
         """Replace NA values with np.nan"""
