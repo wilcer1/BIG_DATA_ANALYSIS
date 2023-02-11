@@ -6,8 +6,20 @@ import numpy as np
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType
 import sys
-
+import os
 import matplotlib.ticker as ticker
+import pymongo
+import dotenv
+
+# Connect to the MongoDB Atlas cluster
+dotenv.load_dotenv()
+mongo_uri = os.getenv("MONGO_URI")
+client = pymongo.MongoClient(mongo_uri)
+db = client["BigDataAnalysis"]
+
+# Define the users collection
+users = db["users"]
+
 
 
 class Shell(cmd.Cmd):
@@ -558,9 +570,31 @@ class Shell(cmd.Cmd):
         """Exit the shell"""
         return True
     
-   
-        
+# Define a function to handle the login process
+def login():
+    # Ask the user for their username and password
+    username = input("Username: ")
+    password = input("Password: ")
 
+    # Try to find the user in the users collection
+    user = users.find_one({"username": username})
 
-shell = Shell()
-shell.start_loop()
+    # If the user exists and the password is correct, log them in
+    if user and user["password"] == password:
+        print("Login successful!")
+        return True
+    else:
+        print("Login failed.")
+        return False
+
+# Call the login function to start the login process
+if __name__ == "__main__":
+    while True:
+        if login():
+            print("Welcome to the secret area!")
+            shell = Shell()
+            shell.start_loop()
+            break
+        else:
+            print("Please try again.")
+
