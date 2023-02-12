@@ -587,14 +587,23 @@ def login():
         print("Login failed.")
         return False
 
+def main():
+
+    # loggedIn = False
+
+    # while not loggedIn:
+    #     if login():
+    #         loggedIn = True
+    #         print("Welcome to the secret area!")
+    #         shell = Shell()
+    #         shell.start_loop()
+    #     else:
+    #         print("Please try again.")
+
+    print("Welcome to the secret area!")
+    print("Starting hadoop...")
+
+
 # Call the login function to start the login process
 if __name__ == "__main__":
-    while True:
-        if login():
-            print("Welcome to the secret area!")
-            shell = Shell()
-            shell.start_loop()
-            break
-        else:
-            print("Please try again.")
-
+    main()
