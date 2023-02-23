@@ -26,7 +26,10 @@ class Shell(cmd.Cmd):
     def start_loop(self):
         self.setup()
         self.cmdloop()
-
+        
+    
+        
+        
     def setup(self):
         self.spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
         self.starting_point = 1987
@@ -34,16 +37,20 @@ class Shell(cmd.Cmd):
         self.df = {}
         
         for i in range(self.starting_point,self.ending_point):
-            self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/"+str(i)+".csv")
+            self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/"+str(i)+".csv")
             print(i, " file loaded")
-        self.airportdf = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/airports.csv")
+        self.airportdf = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
         print("All files loaded")
+        # for key, val in self.df.items():
+        #     val = val.replace("NA", str(np.nan)) #change to nan if you want to plot the null values
+        #     self.df[key] = val
+        #     print(f"Replaced NA values in {key}")
         
     
     
     
     
-    def do_plot_null_values(self, line):
+    def do_plot2_null_values(self, line):
         """Plot null values in the dataset and save them to img folder"""
         for name, file in self.df.items():
             null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
@@ -55,11 +62,11 @@ class Shell(cmd.Cmd):
             plt.ylabel("Number of null values")
             plt.title("Distribution of null values across columns")
             
-            plt.savefig(f"img\\NA_values_{name}.png")
+            plt.savefig(f"img\\na\\NA_values_{name}.png")
             plt.clf()
 
-    def do_plot_air_delay(self, line):
-        """Plot the average air delay over time"""
+    def do_plot_arr_delay(self, line):
+        """Plot the average arr delay over time"""
         plt.figure(figsize=(15, 10))
         avg_delays = {}
         file_names = []
@@ -71,7 +78,7 @@ class Shell(cmd.Cmd):
             
             # get the list of delays
             delays = file.select("ArrDelay")
-            # filter out the NA values
+            
             avg_delay = delays.agg(F.avg("ArrDelay"))
             # get the average delay of the file
             avg_delay = avg_delay.first()[0]
@@ -98,7 +105,7 @@ class Shell(cmd.Cmd):
         
         
         # Save the plot to a new file
-        plt.savefig(f"img\\delay\\air_delay_comparison.png")
+        plt.savefig(f"img\\delay\\arr_delay_comparison.png")
         plt.clf()
     
     def do_plot_cancelled(self, line):
@@ -543,13 +550,7 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\airports\\dest_state.png")
         plt.clf()  
 
-    def do_replace_na(self, line):
-        """Replace NA values with np.nan"""
-        for key, val in self.df.items():
-            val = val.replace("NA", str(np.nan))
-            self.df[key] = val
-            print(f"Replaced NA values in {key}")
-        
+
     def do_drop_null(self, line):
         """Drop all rows with null values"""
         for key, val in self.df.items():
@@ -557,13 +558,73 @@ class Shell(cmd.Cmd):
             self.df[key] = val
             print(f"Dropped null values in {key}")
         
-    def do_print_column_head(self, line):
-        """Print the first 20 rows of a column"""
-        print(self.df["1987"].select(line).show(20))
+    def do_print_column_head(self, line1):
+        """Print the first 20 rows of a column: <Year> <Column>"""
+        print(self.df["1987"].select(line2).show(5000))
 
     def do_show_columns(self, line):
         """Show the columns of the dataset"""
         print(self.df["1987"].columns)
+
+    def do_print_null_count(self, line):
+        """Print the number of null values / total values in a column: <Year> <Column>"""
+        for name, year in self.df.items():
+            # get row count of column
+            row_count = year.count()
+            
+            print(f"{name}: {year.filter(year[line].isNull()).count()} / {row_count}")
+    
+    def do_plot_null_values(self, line):
+        """Plot null values per column for each year""" 
+        null_values_dict = {}
+
+        for name, year in self.df.items():
+            print(f"-----------------year: {name}----------------")
+            null_values_dict[name] = {}
+            row_count = year.count()
+            for col in year.columns:
+                raw = year.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in self.df["1987"].columns))
+                collected = raw.collect()
+                for i in collected:
+                    for col, nullvalue in i.asDict().items():
+                        null_values_dict[name][col] = nullvalue / row_count * 100
+
+        for i in null_values_dict:
+            col = null_values_dict[i]
+            null_val = col.values()
+            
+                
+
+            plt.figure(figsize=(10, 15))
+            plt.xticks(rotation=90)
+            plt.yticks(range(round(min(null_val)), round(max(null_val))+1, round(max(null_val)/8)))
+            plt.xticks(range(0, len(col.keys()), 1), rotation=70)
+            
+            plt.bar(null_val, col.keys())
+            
+            plt.xlabel("Columns")
+            plt.ylabel("Number of null values")
+            plt.title("Distribution of null values across columns")
+                
+            plt.savefig(f"img\\na\\NA_values_{name}.png")
+            plt.clf()
+             
+        
+                
+        
+        #print null values dict
+        
+
+    def do_test(self, line):
+        
+        null_counts = self.df["1987"].select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in self.df["1987"].columns))
+        collected = null_counts.collect()
+        
+        for i in collected:
+            for key, val in i.asDict().items():
+                print(f"{key}: {val}")
+        
+            
   
 
     def do_EOF(self, line):
@@ -602,6 +663,8 @@ def main():
 
     print("Welcome to the secret area!")
     print("Starting hadoop...")
+    shell = Shell()
+    shell.start_loop()
 
 
 # Call the login function to start the login process
