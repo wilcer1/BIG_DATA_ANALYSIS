@@ -278,8 +278,8 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\num_flights\\num_flights_comparison.png")
         plt.clf()  
 
-    def do_plot_num_flights_divided_by_diverted(self, line):
-        """Plot number of flights divided by total diverted flights by year"""
+    def do_plot_diverted_vs_total(self, line):
+        """Plot (number of divirted flights divided by total flights)  * 100 by year"""
         plt.figure(figsize=(15, 10))
         num_flights_diverted_divided = {}
         file_names = []
@@ -294,33 +294,34 @@ class Shell(cmd.Cmd):
             num_flights = year_col.count()
             diverted_flights = file.select("Diverted")
             diverted_num = diverted_flights.filter(diverted_flights["Diverted"] == 1).count()
-            num_flights_diverted_divided[name] = round(num_flights) / round(diverted_num)
+            num_flights_diverted_divided[name] = (diverted_num / num_flights ) * 100
+            print(num_flights_diverted_divided[name])
             
             file_names.append(name)
         plt.plot(file_names, num_flights_diverted_divided.values())
         plt.xlabel("Year")
-        plt.ylabel("Number of Flights / Number of Diverted Flights")
-        plt.title("Number of Flights / Number of Diverted Flights over Time")
+        plt.ylabel("(Number of Diverted Flights / Number of Flights) * 100")
+        plt.title("Number of Diverted Flights / Number of Flights over Time (percentage)")
         # plt.legend()
-        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
-        plt.ylim(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1)
+        
+        plt.ylim(0, round((max(num_flights_diverted_divided.values())) + 1))
 
         # Set the y-axis ticks
-        plt.yticks(range(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1, round(max(num_flights_diverted_divided.values())/10)))
+        #plt.yticks(range(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1, 0.1))
         plt.xticks(range(0, len(file_names), 1))
 
         # Set the tick labels to the file names using a FixedFormatter
         formatter = ticker.FixedFormatter(file_names)
         plt.gca().xaxis.set_major_formatter(formatter)
-        print("max", max(num_flights_diverted_divided.values()))
+       
         
         
         # Save the plot to a new file
         plt.savefig(f"img\\diverted\\num_flights_dividedby_diverted.png")
         plt.clf()  
     
-    def do_plot_total_dividedby_cancelled(self, line):
-        """Plot number of flights divided by total cancelled flights by year"""
+    def do_plot_cancelled_vs_num_flights(self, line):
+        """Plot (number of flights divided by total cancelled flights) * 100 by year"""
         plt.figure(figsize=(15, 10))
         file_names = []
         num_flights_cancelled_divided = {}
@@ -335,19 +336,21 @@ class Shell(cmd.Cmd):
             num_flights = year_col.count()
             cancelled_flights = file.select("Cancelled")
             cancelled_num = cancelled_flights.filter(cancelled_flights["Cancelled"] == 1).count()
-            num_flights_cancelled_divided[name] = round(num_flights) / round(cancelled_num)
+            num_flights_cancelled_divided[name] = (cancelled_num / num_flights) * 100 
+            print(f"cancelled_num: {cancelled_num} num_flights: {num_flights}")
+            print(num_flights_cancelled_divided[name])
             
             file_names.append(name)
         plt.plot(file_names, num_flights_cancelled_divided.values())
         plt.xlabel("Year")
-        plt.ylabel("Number of Flights / Number of Cancelled Flights")
-        plt.title("Number of Flights / Number of Cancelled Flights over Time")
+        plt.ylabel("(Number of cancelled flights / Number of Flights) * 100 ")
+        plt.title("Number of cancelled flights / Number of Flights over Time (percentage)")
         # plt.legend()
-        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
-        plt.ylim(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1)
+       
+        plt.ylim(0,round(max(num_flights_cancelled_divided.values())) + 1)
 
         # Set the y-axis ticks
-        plt.yticks(range(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1, round(max(num_flights_cancelled_divided.values())/10)))
+        #plt.yticks(range(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1, round(max(num_flights_cancelled_divided.values())/10)))
         plt.xticks(range(0, len(file_names), 1))
 
         # Set the tick labels to the file names using a FixedFormatter
@@ -357,7 +360,7 @@ class Shell(cmd.Cmd):
         
         
         # Save the plot to a new file
-        plt.savefig(f"img\\interactions\\num_flights_dividedby_cancelled.png")
+        plt.savefig(f"img\\interactions\\cancelled_vs_num_flights.png")
         plt.clf()  
 
     def do_plot_origin(self, line):
