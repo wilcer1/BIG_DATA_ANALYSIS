@@ -37,9 +37,9 @@ class Shell(cmd.Cmd):
         self.df = {}
         
         for i in range(self.starting_point,self.ending_point):
-            self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/"+str(i)+".csv")
+            self.df[str(i)] = self.spark.read.format("csv").option("header", "true").option("nullValue", "NA").load("hdfs://localhost:9000/sample2/dataset/"+str(i)+".csv")
             print(i, " file loaded")
-        self.airportdf = self.spark.read.format("csv").option("header","true").option("nullValue", "NA").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
+        self.airportdf = self.spark.read.format("csv").option("header","true").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
         print("All files loaded")
 
         cols_to_drop = ["Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime", "ArrTime", "CRSArrTime", "UniqueCarrier","TailNum", "ActualElapsedTime", "CRSElapsedTime", "AirTime", "TaxiIn", "TaxiOut", "CancellationCode", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay"]
@@ -49,7 +49,7 @@ class Shell(cmd.Cmd):
             print(self.df[name].columns)
         
     
-    
+        self.df_backup = self.df
     
     
     def do_plot2_null_values(self, line):
@@ -70,12 +70,14 @@ class Shell(cmd.Cmd):
     def do_plot_arr_delay(self, line):
         """Plot the average arr delay over time"""
         
+        
         plt.figure(figsize=(15, 10))
         avg_delays = {}
         file_names = []
         max_avg = 0
         i = 0
         for name, file in self.df.items():
+            self.df[name].na.drop(subset=["ArrDelay"])
             print("name: ", name, f"{i}/{len(self.df)}")
             i+=1
             
@@ -106,19 +108,21 @@ class Shell(cmd.Cmd):
         formatter = ticker.FixedFormatter(file_names)
         plt.gca().xaxis.set_major_formatter(formatter)
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\delay\\arr_delay_comparison.png")
         plt.clf()
     
     def do_plot_cancelled(self, line):
         """Plot the average number of cancelled flights over time"""
+        
         plt.figure(figsize=(20, 20))
         cancelled = {}
         file_names = []
         max_cancelled = 0
         i = 0
         for name, file in self.df.items():
+            self.df[name].na.drop(subset=["Cancelled"])
             print("name: ", name, f"{i}/{len(self.df)}")
             i+=1
             
@@ -149,7 +153,7 @@ class Shell(cmd.Cmd):
         formatter = ticker.FixedFormatter(file_names)
         plt.gca().xaxis.set_major_formatter(formatter)
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\cancelled\\cancelled_comparison.png")
         plt.clf()
@@ -163,6 +167,7 @@ class Shell(cmd.Cmd):
         i = 0
         for name, file in self.df.items():
             print("name: ", name, f"{i}/{len(self.df)}")
+            self.df[name].na.drop(subset=["Distance"])
             i+=1
             
             # get the list of Distances
@@ -196,7 +201,7 @@ class Shell(cmd.Cmd):
         formatter = ticker.FixedFormatter(file_names)
         plt.gca().xaxis.set_major_formatter(formatter)
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\distance\\distance_comparison.png")
         plt.clf()
@@ -210,6 +215,7 @@ class Shell(cmd.Cmd):
         i = 0
         for name, file in self.df.items():
             print("name: ", name, f"{i}/{len(self.df)}")
+            self.df[name].na.drop(subset=["Diverted"])
             i+=1
             
             
@@ -234,7 +240,7 @@ class Shell(cmd.Cmd):
         formatter = ticker.FixedFormatter(file_names)
         plt.gca().xaxis.set_major_formatter(formatter)
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\diverted\\diverted_comparison.png")
         plt.clf()
@@ -248,6 +254,7 @@ class Shell(cmd.Cmd):
         i = 0
         for name, file in self.df.items():
             print("name: ", name, f"{i}/{len(self.df)}")
+            self.df[name].na.drop(subset=["Year"])
             i+=1
             
             
@@ -276,7 +283,7 @@ class Shell(cmd.Cmd):
         plt.gca().xaxis.set_major_formatter(formatter)
         print("max", max(num_flights_dict.values()))
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\num_flights\\num_flights_comparison.png")
         plt.clf()  
@@ -372,8 +379,8 @@ class Shell(cmd.Cmd):
         file_names = []
         most_common_airports_dict = {}
         i = 0
-        
         for name, file in self.df.items():
+            self.df[name].na.drop(subset=["origin"])
             print("name: ", name, f"{i}/{len(self.df)}")
             i+=1
             
@@ -421,7 +428,7 @@ class Shell(cmd.Cmd):
         
        
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\airports\\origin_state.png")
         plt.clf()  
@@ -438,6 +445,8 @@ class Shell(cmd.Cmd):
         i = 0
         for name, file in self.df.items():
             print("name: ", name, f"{i}/{len(self.df)}")
+            self.df[name].na.drop(subset=["origin"])
+            self.df[name].na.drop(subset=["ArrDelay"])
             i += 1
             
             origin = file.select("Origin")
@@ -491,7 +500,7 @@ class Shell(cmd.Cmd):
         # formatter = ticker.FixedFormatter(file_names)
         # plt.gca().xaxis.set_major_formatter(formatter)
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\airports\\arr_delay_state_comparison.png")
         plt.clf()
@@ -505,6 +514,7 @@ class Shell(cmd.Cmd):
         
         for name, file in self.df.items():
             print("name: ", name, f"{i}/{len(self.df)}")
+            self.df[name].na.drop(subset=["Dest"])
             i+=1
             
             
@@ -551,7 +561,7 @@ class Shell(cmd.Cmd):
         
        
         
-        
+        self.df = self.df_backup
         # Save the plot to a new file
         plt.savefig(f"img\\airports\\dest_state.png")
         plt.clf()  
@@ -581,44 +591,24 @@ class Shell(cmd.Cmd):
             print(f"{name}: {year.filter(year[line].isNull()).count()} / {row_count}")
     
     def do_plot_null_values(self, line):
-        """Plot null values per column for each year""" 
-        null_values_dict = {}
-
-        for name, year in self.df.items():
-            print(f"-----------------year: {name}----------------")
-            null_values_dict[name] = {}
-            row_count = year.count()
-            for col in year.columns:
-                raw = year.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in self.df["1987"].columns))
-                collected = raw.collect()
-                for i in collected:
-                    for col, nullvalue in i.asDict().items():
-                        null_values_dict[name][col] = nullvalue / row_count * 100
-
-        for i in null_values_dict:
-            col = null_values_dict[i]
-            null_val = col.values()
-            
-                
-
+        """Plot the number of null values in each column for each year"""
+        for name, file in self.df.items():
+            null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
             plt.figure(figsize=(10, 15))
             plt.xticks(rotation=90)
-            plt.yticks(range(round(min(null_val)), round(max(null_val))+1, round(max(null_val)/8)))
-            plt.xticks(range(0, len(col.keys()), 1), rotation=70)
-            
-            plt.bar(null_val, col.keys())
-            
+            plt.bar(null_counts.index, null_counts.values)
+            print("name: ", name)
             plt.xlabel("Columns")
             plt.ylabel("Number of null values")
             plt.title("Distribution of null values across columns")
-                
-            plt.savefig(f"img\\na\\NA_values_{name}.png")
+            
+            plt.savefig(f"img\\NA_values_{name}.png")
             plt.clf()
-             
-        
                 
-        
-        #print null values dict
+            
+                    
+            
+           
         
 
     def do_test(self, line):
