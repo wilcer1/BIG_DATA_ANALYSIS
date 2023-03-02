@@ -53,8 +53,8 @@ def decrypt_file(file_name, password, output_file=None):
 
 
 def main():
-    encrypt_file("shell.py", "admin", "shell.enc")
-    #decrypt_file("shell.enc", "admin", "shell.py")
+    #encrypt_file("shell.py", "admin", "shell.enc")
+    decrypt_file("shell.enc", "admin", "shell.py")
 
 if __name__ == "__main__":
     main()
