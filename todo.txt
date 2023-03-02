@@ -1,0 +1,2 @@
+Total flights / cancelled flights per state
+arr delay per state
