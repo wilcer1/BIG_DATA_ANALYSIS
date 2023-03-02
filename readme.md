@@ -1,6 +1,8 @@
 # Big Data Analysis 
 This is our project for the big data analysis course.<br />
 Creators: Wille Cervin, Lucas Carlsson, Victor Hylén, Timmy Bergvall
+## Run Instructions
+You need to pip install the pipinstall.txt and have the dataset in the hadoop path specified in shell_copy.py to be able to run the code. Then you can run it through terminal with "python login.py"
 ## File Structure
 We have three main files: shell, login, and shell_copy
 ### Shell
