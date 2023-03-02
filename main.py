@@ -53,19 +53,7 @@ def check_nan():
             plt.ylabel("Number of NA values")
             plt.savefig(f"/img/NA_values_{name}.png")
 
-def plot_null_values():
-    for name, file in df.items():
-        null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
-        plt.figure(figsize=(10, 15))
-        plt.xticks(rotation=90)
-        plt.bar(null_counts.index, null_counts.values)
-        print("name: ", name)
-        plt.xlabel("Columns")
-        plt.ylabel("Number of null values")
-        plt.title("Distribution of null values across columns")
-        
-        plt.savefig(f"img\\NA_values_{name}.png")
-        plt.clf()
+
 
 def plot_null_value_of_file(file, name):
     null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]

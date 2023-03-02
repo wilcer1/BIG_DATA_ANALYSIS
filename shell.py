@@ -26,7 +26,10 @@ class Shell(cmd.Cmd):
     def start_loop(self):
         self.setup()
         self.cmdloop()
-
+        
+    
+        
+        
     def setup(self):
         self.spark = SparkSession.builder.appName('demo').master('local').enableHiveSupport().getOrCreate()
         self.starting_point = 1987
@@ -34,16 +37,22 @@ class Shell(cmd.Cmd):
         self.df = {}
         
         for i in range(self.starting_point,self.ending_point):
-            self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/"+str(i)+".csv")
+            self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/"+str(i)+".csv")
             print(i, " file loaded")
-        self.airportdf = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample/dataset/airports.csv")
+        self.airportdf = self.spark.read.format("csv").option("header","true").option("nullValue", "NA").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
         print("All files loaded")
+
+        cols_to_drop = ["Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime", "ArrTime", "CRSArrTime", "UniqueCarrier","TailNum", "ActualElapsedTime", "CRSElapsedTime", "AirTime", "TaxiIn", "TaxiOut", "CancellationCode", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay"]
+        for name, file in self.df.items():
+            self.df[name] = file.drop(*cols_to_drop)
+            print(name, " file cleaned")
+            print(self.df[name].columns)
         
     
     
     
     
-    def do_plot_null_values(self, line):
+    def do_plot2_null_values(self, line):
         """Plot null values in the dataset and save them to img folder"""
         for name, file in self.df.items():
             null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
@@ -55,11 +64,12 @@ class Shell(cmd.Cmd):
             plt.ylabel("Number of null values")
             plt.title("Distribution of null values across columns")
             
-            plt.savefig(f"img\\NA_values_{name}.png")
+            plt.savefig(f"img\\na\\NA_values_{name}.png")
             plt.clf()
 
-    def do_plot_air_delay(self, line):
-        """Plot the average air delay over time"""
+    def do_plot_arr_delay(self, line):
+        """Plot the average arr delay over time"""
+        
         plt.figure(figsize=(15, 10))
         avg_delays = {}
         file_names = []
@@ -71,7 +81,7 @@ class Shell(cmd.Cmd):
             
             # get the list of delays
             delays = file.select("ArrDelay")
-            # filter out the NA values
+            
             avg_delay = delays.agg(F.avg("ArrDelay"))
             # get the average delay of the file
             avg_delay = avg_delay.first()[0]
@@ -98,7 +108,7 @@ class Shell(cmd.Cmd):
         
         
         # Save the plot to a new file
-        plt.savefig(f"img\\delay\\air_delay_comparison.png")
+        plt.savefig(f"img\\delay\\arr_delay_comparison.png")
         plt.clf()
     
     def do_plot_cancelled(self, line):
@@ -271,8 +281,8 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\num_flights\\num_flights_comparison.png")
         plt.clf()  
 
-    def do_plot_num_flights_divided_by_diverted(self, line):
-        """Plot number of flights divided by total diverted flights by year"""
+    def do_plot_diverted_vs_total(self, line):
+        """Plot (number of divirted flights divided by total flights)  * 100 by year"""
         plt.figure(figsize=(15, 10))
         num_flights_diverted_divided = {}
         file_names = []
@@ -287,33 +297,34 @@ class Shell(cmd.Cmd):
             num_flights = year_col.count()
             diverted_flights = file.select("Diverted")
             diverted_num = diverted_flights.filter(diverted_flights["Diverted"] == 1).count()
-            num_flights_diverted_divided[name] = round(num_flights) / round(diverted_num)
+            num_flights_diverted_divided[name] = (diverted_num / num_flights ) * 100
+            print(num_flights_diverted_divided[name])
             
             file_names.append(name)
         plt.plot(file_names, num_flights_diverted_divided.values())
         plt.xlabel("Year")
-        plt.ylabel("Number of Flights / Number of Diverted Flights")
-        plt.title("Number of Flights / Number of Diverted Flights over Time")
+        plt.ylabel("(Number of Diverted Flights / Number of Flights) * 100")
+        plt.title("Number of Diverted Flights / Number of Flights over Time (percentage)")
         # plt.legend()
-        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
-        plt.ylim(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1)
+        
+        plt.ylim(0, round((max(num_flights_diverted_divided.values())) + 1))
 
         # Set the y-axis ticks
-        plt.yticks(range(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1, round(max(num_flights_diverted_divided.values())/10)))
+        #plt.yticks(range(round(min(num_flights_diverted_divided.values())), round(max(num_flights_diverted_divided.values()))+1, 0.1))
         plt.xticks(range(0, len(file_names), 1))
 
         # Set the tick labels to the file names using a FixedFormatter
         formatter = ticker.FixedFormatter(file_names)
         plt.gca().xaxis.set_major_formatter(formatter)
-        print("max", max(num_flights_diverted_divided.values()))
+       
         
         
         # Save the plot to a new file
         plt.savefig(f"img\\diverted\\num_flights_dividedby_diverted.png")
         plt.clf()  
     
-    def do_plot_total_dividedby_cancelled(self, line):
-        """Plot number of flights divided by total cancelled flights by year"""
+    def do_plot_cancelled_vs_num_flights(self, line):
+        """Plot (number of flights divided by total cancelled flights) * 100 by year"""
         plt.figure(figsize=(15, 10))
         file_names = []
         num_flights_cancelled_divided = {}
@@ -328,19 +339,21 @@ class Shell(cmd.Cmd):
             num_flights = year_col.count()
             cancelled_flights = file.select("Cancelled")
             cancelled_num = cancelled_flights.filter(cancelled_flights["Cancelled"] == 1).count()
-            num_flights_cancelled_divided[name] = round(num_flights) / round(cancelled_num)
+            num_flights_cancelled_divided[name] = (cancelled_num / num_flights) * 100 
+            print(f"cancelled_num: {cancelled_num} num_flights: {num_flights}")
+            print(num_flights_cancelled_divided[name])
             
             file_names.append(name)
         plt.plot(file_names, num_flights_cancelled_divided.values())
         plt.xlabel("Year")
-        plt.ylabel("Number of Flights / Number of Cancelled Flights")
-        plt.title("Number of Flights / Number of Cancelled Flights over Time")
+        plt.ylabel("(Number of cancelled flights / Number of Flights) * 100 ")
+        plt.title("Number of cancelled flights / Number of Flights over Time (percentage)")
         # plt.legend()
-        # set the y-axis ticks to be every 60 minutes and the max value to be the max delay
-        plt.ylim(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1)
+       
+        plt.ylim(0,round(max(num_flights_cancelled_divided.values())) + 1)
 
         # Set the y-axis ticks
-        plt.yticks(range(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1, round(max(num_flights_cancelled_divided.values())/10)))
+        #plt.yticks(range(round(min(num_flights_cancelled_divided.values())), round(max(num_flights_cancelled_divided.values()))+1, round(max(num_flights_cancelled_divided.values())/10)))
         plt.xticks(range(0, len(file_names), 1))
 
         # Set the tick labels to the file names using a FixedFormatter
@@ -350,7 +363,7 @@ class Shell(cmd.Cmd):
         
         
         # Save the plot to a new file
-        plt.savefig(f"img\\interactions\\num_flights_dividedby_cancelled.png")
+        plt.savefig(f"img\\interactions\\cancelled_vs_num_flights.png")
         plt.clf()  
 
     def do_plot_origin(self, line):
@@ -543,13 +556,7 @@ class Shell(cmd.Cmd):
         plt.savefig(f"img\\airports\\dest_state.png")
         plt.clf()  
 
-    def do_replace_na(self, line):
-        """Replace NA values with np.nan"""
-        for key, val in self.df.items():
-            val = val.replace("NA", str(np.nan))
-            self.df[key] = val
-            print(f"Replaced NA values in {key}")
-        
+
     def do_drop_null(self, line):
         """Drop all rows with null values"""
         for key, val in self.df.items():
@@ -557,13 +564,52 @@ class Shell(cmd.Cmd):
             self.df[key] = val
             print(f"Dropped null values in {key}")
         
-    def do_print_column_head(self, line):
-        """Print the first 20 rows of a column"""
-        print(self.df["1987"].select(line).show(20))
+    def do_print_column_head(self, line1):
+        """Print the first 20 rows of a column: <Year> <Column>"""
+        print(self.df["1987"].select(line1).show(5000))
 
     def do_show_columns(self, line):
         """Show the columns of the dataset"""
         print(self.df["1987"].columns)
+
+    def do_print_null_count(self, line):
+        """Print the number of null values / total values in a column: <Year> <Column>"""
+        for name, year in self.df.items():
+            # get row count of column
+            row_count = year.count()
+            
+            print(f"{name}: {year.filter(year[line].isNull()).count()} / {row_count}")
+    
+    def do_plot_null_values(self, line):
+        for name, file in self.df.items():
+            null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
+            plt.figure(figsize=(10, 15))
+            plt.xticks(rotation=90)
+            plt.bar(null_counts.index, null_counts.values)
+            print("name: ", name)
+            plt.xlabel("Columns")
+            plt.ylabel("Number of null values")
+            plt.title("Distribution of null values across columns")
+            
+            plt.savefig(f"img\\NA_values_{name}.png")
+            plt.clf()
+                
+            
+                    
+            
+           
+        
+
+    def do_test(self, line):
+        
+        null_counts = self.df["1987"].select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in self.df["1987"].columns))
+        collected = null_counts.collect()
+        
+        for i in collected:
+            for key, val in i.asDict().items():
+                print(f"{key}: {val}")
+        
+            
   
 
     def do_EOF(self, line):
@@ -588,6 +634,18 @@ def login():
         return False
 
 def main():
+
+    loggedIn = False
+
+    while not loggedIn:
+        if login():
+            loggedIn = True
+            print("Welcome to the secret area!")
+            shell = Shell()
+            shell.start_loop()
+        else:
+            print("Please try again.")
+
     print("Welcome to the secret area!")
     print("Starting hadoop...")
     shell = Shell()
