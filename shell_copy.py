@@ -39,12 +39,9 @@ class Shell(cmd.Cmd):
         for i in range(self.starting_point,self.ending_point):
             self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/"+str(i)+".csv")
             print(i, " file loaded")
-        self.airportdf = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
+        self.airportdf = self.spark.read.format("csv").option("header","true","nullValue", "NA").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
         print("All files loaded")
-        # for key, val in self.df.items():
-        #     val = val.replace("NA", str(np.nan)) #change to nan if you want to plot the null values
-        #     self.df[key] = val
-        #     print(f"Replaced NA values in {key}")
+    
         
     
     
