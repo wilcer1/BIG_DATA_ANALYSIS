@@ -563,7 +563,7 @@ class Shell(cmd.Cmd):
         
     def do_print_column_head(self, line1):
         """Print the first 20 rows of a column: <Year> <Column>"""
-        print(self.df["1987"].select(line2).show(5000))
+        print(self.df["1987"].select(line1).show(5000))
 
     def do_show_columns(self, line):
         """Show the columns of the dataset"""
