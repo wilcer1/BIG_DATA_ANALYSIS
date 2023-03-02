@@ -39,9 +39,14 @@ class Shell(cmd.Cmd):
         for i in range(self.starting_point,self.ending_point):
             self.df[str(i)] = self.spark.read.format("csv").option("header", "true").load("hdfs://localhost:9000/sample2/dataset/"+str(i)+".csv")
             print(i, " file loaded")
-        self.airportdf = self.spark.read.format("csv").option("header","true","nullValue", "NA").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
+        self.airportdf = self.spark.read.format("csv").option("header","true").option("nullValue", "NA").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
         print("All files loaded")
-    
+
+        cols_to_drop = ["Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime", "ArrTime", "CRSArrTime", "UniqueCarrier","TailNum", "ActualElapsedTime", "CRSElapsedTime", "AirTime", "TaxiIn", "TaxiOut", "CancellationCode", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay"]
+        for name, file in self.df.items():
+            self.df[name] = file.drop(*cols_to_drop)
+            print(name, " file cleaned")
+            print(self.df[name].columns)
         
     
     
@@ -64,6 +69,7 @@ class Shell(cmd.Cmd):
 
     def do_plot_arr_delay(self, line):
         """Plot the average arr delay over time"""
+        
         plt.figure(figsize=(15, 10))
         avg_delays = {}
         file_names = []
