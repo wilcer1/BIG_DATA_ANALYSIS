@@ -1,5 +1,5 @@
 # Big Data Analysis 
-This is our project for the big data analysis course.\n
+This is our project for the big data analysis course.<br />
 Creators: Wille Cervin, Lucas Carlsson, Victor Hylén, Timmy Bergvall
 ## File Structure
 We have three main files: shell, login, and shell_copy
