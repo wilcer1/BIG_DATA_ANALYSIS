@@ -604,12 +604,6 @@ class Shell(cmd.Cmd):
             
             plt.savefig(f"img\\NA_values_{name}.png")
             plt.clf()
-                
-            
-                    
-            
-           
-        
 
     def do_test(self, line):
         
@@ -619,9 +613,6 @@ class Shell(cmd.Cmd):
         for i in collected:
             for key, val in i.asDict().items():
                 print(f"{key}: {val}")
-        
-            
-  
 
     def do_EOF(self, line):
         """Exit the shell"""
