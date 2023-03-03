@@ -55,7 +55,7 @@ class Shell(cmd.Cmd):
     def do_plot2_null_values(self, line):
         """Plot null values in the dataset and save them to img folder"""
         for name, file in self.df.items():
-            null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
+            null_counts = file.select(*(F.sum(F.col(c).isNull().cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
             plt.figure(figsize=(10, 15))
             plt.xticks(rotation=90)
             plt.bar(null_counts.index, null_counts.values)
@@ -593,7 +593,7 @@ class Shell(cmd.Cmd):
     def do_plot_null_values(self, line):
         """Plot the number of null values in each column for each year"""
         for name, file in self.df.items():
-            null_counts = file.select(*(F.sum(F.isnan(F.col(c)).cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
+            null_counts = file.select(*(F.sum(F.col(c).isNull().cast("int")).alias(c) for c in file.columns)).toPandas().iloc[0]
             plt.figure(figsize=(10, 15))
             plt.xticks(rotation=90)
             plt.bar(null_counts.index, null_counts.values)
@@ -602,7 +602,7 @@ class Shell(cmd.Cmd):
             plt.ylabel("Number of null values")
             plt.title("Distribution of null values across columns")
             
-            plt.savefig(f"img\\NA_values_{name}.png")
+            plt.savefig(f"img\\na\\NA_values_{name}.png")
             plt.clf()
 
     def do_test(self, line):
