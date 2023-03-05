@@ -42,7 +42,10 @@ class Shell(cmd.Cmd):
         self.airportdf = self.spark.read.format("csv").option("header","true").load("hdfs://localhost:9000/sample2/dataset/airports.csv")
         print("All files loaded")
 
-        cols_to_drop = ["Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime", "ArrTime", "CRSArrTime", "UniqueCarrier","TailNum", "ActualElapsedTime", "CRSElapsedTime", "AirTime", "TaxiIn", "TaxiOut", "CancellationCode", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay"]
+        cols_to_drop = ["Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime",
+         "ArrTime", "CRSArrTime", "UniqueCarrier","TailNum", "ActualElapsedTime",
+          "CRSElapsedTime", "AirTime", "TaxiIn", "TaxiOut", "CancellationCode",
+            "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay"]
         for name, file in self.df.items():
             self.df[name] = file.drop(*cols_to_drop)
             print(name, " file cleaned")
